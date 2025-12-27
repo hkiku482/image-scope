@@ -60,6 +60,7 @@ function App() {
 
 	// ドラッグ開始
 	const handleMouseDown = (e: React.MouseEvent) => {
+		e.preventDefault();
 		if (e.button !== 0) return; // 左クリックのみ
 		setIsDragging(true);
 		setStartPos({ x: e.clientX - offset.x, y: e.clientY - offset.y });
@@ -67,6 +68,7 @@ function App() {
 
 	// ドラッグ中
 	const handleMouseMove = (e: React.MouseEvent) => {
+		e.preventDefault();
 		if (!isDragging) return;
 		setOffset({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
 	};
