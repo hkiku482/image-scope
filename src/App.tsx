@@ -1,5 +1,6 @@
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { Canvas } from "./features/Canvas";
 import { useDisplayImage } from "./hooks/useDisplayImage";
 import { useSearchPath } from "./hooks/useSearchPath";
 
@@ -14,69 +15,6 @@ function App() {
 		handlePrevious,
 		handleSelectImage,
 	} = useDisplayImage();
-
-	// 拡大・縮小と移動のための状態
-	const [scale, setScale] = useState(1);
-	const [offset, setOffset] = useState({ x: 0, y: 0 });
-	const [isDragging, setIsDragging] = useState(false);
-	const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-
-	const imageContainerRef = useRef<HTMLElement>(null);
-
-	// 画像が切り替わったらリセット
-	useEffect(() => {
-		if (currentImage !== undefined) {
-			setScale(1);
-			setOffset({ x: 0, y: 0 });
-		}
-	}, [currentImage]);
-
-	const handleWheel = useCallback((e: WheelEvent) => {
-		e.preventDefault();
-		const zoomSpeed = 0.02;
-		const factor = 2 ** (-e.deltaY * zoomSpeed);
-		setScale((prev) => Math.min(Math.max(1, prev * factor), 16));
-	}, []);
-
-	const handleDoubleClick = useCallback(() => {
-		setScale(1);
-		setOffset({ x: 0, y: 0 });
-	}, []);
-
-	// ホイールでズーム (ログスケール)
-	useEffect(() => {
-		const container = imageContainerRef.current;
-		if (!container) return;
-
-		container.addEventListener("wheel", handleWheel, { passive: false });
-		container.addEventListener("dblclick", handleDoubleClick, {
-			passive: false,
-		});
-		return () => {
-			container.removeEventListener("wheel", handleWheel);
-			container.removeEventListener("dblclick", handleDoubleClick);
-		};
-	}, [handleWheel, handleDoubleClick]);
-
-	// ドラッグ開始
-	const handleMouseDown = (e: React.MouseEvent) => {
-		e.preventDefault();
-		if (e.button !== 0) return; // 左クリックのみ
-		setIsDragging(true);
-		setStartPos({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-	};
-
-	// ドラッグ中
-	const handleMouseMove = (e: React.MouseEvent) => {
-		e.preventDefault();
-		if (!isDragging) return;
-		setOffset({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
-	};
-
-	// ドラッグ終了
-	const handleMouseUp = () => {
-		setIsDragging(false);
-	};
 
 	useEffect(() => {
 		const unlisten = getCurrentWebviewWindow().onDragDropEvent(
@@ -165,31 +103,8 @@ function App() {
 					</ul>
 				</div>
 
-				{/* 画像表示エリア */}
-				<section
-					ref={imageContainerRef}
-					className="flex-1 bg-[#202020] rounded-lg overflow-hidden flex items-center justify-center border border-[#505050] relative cursor-grab active:cursor-grabbing"
-					onMouseDown={handleMouseDown}
-					onMouseMove={handleMouseMove}
-					onMouseUp={handleMouseUp}
-					onMouseLeave={handleMouseUp}
-					aria-label="Image viewer"
-				>
-					{currentImage ? (
-						<img
-							src={`data:image/jpeg;base64,${currentImage}`}
-							alt="featured"
-							className="max-w-full max-h-full object-contain pointer-events-none select-none"
-							style={{
-								transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-								transformOrigin: "center",
-							}}
-							draggable={false}
-						/>
-					) : (
-						<div className="text-gray-500 italic">No image selected</div>
-					)}
-				</section>
+				{/* 画像表示エリア (Canvas) */}
+				<Canvas src={currentImage} />
 			</div>
 		</main>
 	);
