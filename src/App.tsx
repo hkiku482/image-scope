@@ -5,7 +5,12 @@ import { useDisplayImage } from "./hooks/useDisplayImage";
 import { useSearchPath } from "./hooks/useSearchPath";
 
 function App() {
-	const { searchPath, handlePathChange } = useSearchPath();
+	const {
+		searchPath,
+		changeSearchPath,
+		getChildItems,
+		getChildItemsBySearchPath,
+	} = useSearchPath();
 	const {
 		imagePaths,
 		currentImageIndex,
@@ -23,7 +28,7 @@ function App() {
 					const paths = event.payload.paths;
 					if (paths.length > 0) {
 						const droppedPath = paths[0];
-						const images = await handlePathChange(droppedPath);
+						const images = await getChildItems(droppedPath);
 						handleSetImagePaths(images);
 					}
 				}
@@ -33,15 +38,24 @@ function App() {
 		return () => {
 			unlisten.then((fn) => fn());
 		};
-	}, [handlePathChange, handleSetImagePaths]);
+	}, [getChildItems, handleSetImagePaths]);
 
 	const onPathChange = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const path = e.target.value;
 			if (!path) return;
-			handleSetImagePaths(await handlePathChange(path));
+			changeSearchPath(path);
 		},
-		[handlePathChange, handleSetImagePaths],
+		[changeSearchPath],
+	);
+
+	const onSubmit = useCallback(
+		async (e?: React.FormEvent<HTMLFormElement>) => {
+			e?.preventDefault();
+			const images = await getChildItemsBySearchPath();
+			handleSetImagePaths(images);
+		},
+		[getChildItemsBySearchPath, handleSetImagePaths],
 	);
 
 	useEffect(() => {
@@ -65,13 +79,23 @@ function App() {
 	return (
 		<main className="bg-[#404040] h-screen p-2 flex flex-col overflow-hidden">
 			{/* コントロールパネル */}
-			<input
-				type="text"
-				value={searchPath ?? ""}
-				onChange={onPathChange}
-				placeholder="Directory path..."
-				className="bg-[#303030] text-white border border-[#606060] p-1 rounded w-full placeholder-gray-400 focus:outline-none focus:border-blue-500 mb-2"
-			/>
+			<form onSubmit={onSubmit}>
+				<div className="flex flex-row gap-2">
+					<input
+						type="text"
+						value={searchPath ?? ""}
+						onChange={onPathChange}
+						placeholder="Directory path..."
+						className="bg-[#303030] text-white border border-[#606060] p-1 rounded w-full placeholder-gray-400 focus:outline-none focus:border-blue-500 mb-2"
+					/>
+					<button
+						type="submit"
+						className="px-6 bg-blue-600 text-white rounded mb-2 hover:bg-blue-500 active:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-bold whitespace-nowrap shadow-lg"
+					>
+						Search
+					</button>
+				</div>
+			</form>
 
 			{/* メインコンテンツエリア */}
 			<div className="flex flex-row flex-1 min-h-0 gap-2">

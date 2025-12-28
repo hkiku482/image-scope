@@ -50,6 +50,7 @@ export const useCanvas = (src: string | null) => {
 
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent) => {
+			e.preventDefault();
 			if (e.button !== 0) return; // 左クリックのみ
 			setIsDragging(true);
 			setStartPos({ x: e.clientX - offset.x, y: e.clientY - offset.y });
@@ -59,13 +60,15 @@ export const useCanvas = (src: string | null) => {
 
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent) => {
+			e.preventDefault();
 			if (!isDragging) return;
 			setOffset({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
 		},
 		[isDragging, startPos],
 	);
 
-	const handleMouseUp = useCallback(() => {
+	const handleMouseUp = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
 		setIsDragging(false);
 	}, []);
 

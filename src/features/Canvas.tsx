@@ -39,12 +39,15 @@ export const Canvas = ({ src }: CanvasProps) => {
 		>
 			{src ? (
 				<img
-					src={`data:image/jpeg;base64,${src}`}
+					src={src}
 					alt="featured"
 					className="max-w-full max-h-full object-contain pointer-events-none select-none"
 					style={{
-						transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+						transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${scale})`,
 						transformOrigin: "center",
+						willChange: "transform",
+						backfaceVisibility: "hidden",
+						WebkitBackfaceVisibility: "hidden",
 					}}
 					draggable={false}
 				/>

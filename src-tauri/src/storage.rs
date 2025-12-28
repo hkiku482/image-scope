@@ -17,5 +17,7 @@ pub fn get_path_items(base_path: &Path) -> Vec<PathBuf> {
         ALLOWED_EXTENSIONS_LOWERCASE.contains(&extension.to_lowercase().as_str())
     });
 
-    allowed_entries.collect()
+    let mut paths = allowed_entries.collect::<Vec<PathBuf>>();
+    paths.sort_by(|a, b| a.cmp(b));
+    paths
 }
