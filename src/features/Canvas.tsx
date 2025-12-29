@@ -7,7 +7,6 @@ export const Canvas = ({ src }: CanvasProps) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const imageRef = useRef<HTMLImageElement | null>(null);
-	const [isImageLoaded, setIsImageLoaded] = useState(false);
 	const [imageResolution, setImageResolution] = useState<{
 		width: number;
 		height: number;
@@ -50,20 +49,22 @@ export const Canvas = ({ src }: CanvasProps) => {
 	useEffect(() => {
 		if (!src) {
 			imageRef.current = null;
-			setIsImageLoaded(false);
 			setImageResolution(null);
 			setPickedColor(null);
 			return;
 		}
 
+		// 新しい画像の読み込み開始時に状態をクリア
+		setImageResolution(null);
+		imageRef.current = null;
+
 		const img = new Image();
-		img.src = src;
 		img.onload = () => {
 			imageRef.current = img;
-			setIsImageLoaded(true);
 			setImageResolution({ width: img.width, height: img.height });
 			setPickedColor(null);
 		};
+		img.src = src;
 	}, [src]);
 
 	const handleContextMenu = (e: React.MouseEvent) => {
@@ -132,7 +133,8 @@ export const Canvas = ({ src }: CanvasProps) => {
 		const canvas = canvasRef.current;
 		const container = containerRef.current;
 		const img = imageRef.current;
-		if (!canvas || !container || !img || !isImageLoaded) return;
+
+		if (!canvas || !container) return;
 
 		const ctx = canvas.getContext("2d", { willReadFrequently: true });
 		if (!ctx) return;
@@ -149,6 +151,9 @@ export const Canvas = ({ src }: CanvasProps) => {
 
 		ctx.scale(dpr, dpr);
 		ctx.clearRect(0, 0, width, height);
+
+		// 画像がない、または読み込み中の場合はクリアのみ行い終了
+		if (!img || !imageResolution) return;
 
 		// 画像の描画位置の計算
 		const containerRatio = width / height;
@@ -172,7 +177,7 @@ export const Canvas = ({ src }: CanvasProps) => {
 		ctx.imageSmoothingQuality = "high";
 
 		ctx.drawImage(img, x, y, drawWidth, drawHeight);
-	}, [scale, offset, isImageLoaded, containerSize]);
+	}, [scale, offset, containerSize, imageResolution]);
 
 	useEffect(() => {
 		const container = containerRef.current;

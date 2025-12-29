@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-const ALLOWED_EXTENSIONS_LOWERCASE: &[&str] = &["jpeg", "jpg", "png"];
+const ALLOWED_EXTENSIONS_LOWERCASE: &[&str] = &["jpeg", "jpg", "png", "gif", "webp"];
 
 #[tauri::command]
 pub fn get_path_items(base_path: &Path) -> Vec<PathBuf> {
@@ -18,6 +18,10 @@ pub fn get_path_items(base_path: &Path) -> Vec<PathBuf> {
     });
 
     let mut paths = allowed_entries.collect::<Vec<PathBuf>>();
-    paths.sort_by(|a, b| a.cmp(b));
+    paths.sort_by(|a, b| {
+        let a_str = a.to_string_lossy().to_string();
+        let b_str = b.to_string_lossy().to_string();
+        natord::compare(&a_str, &b_str)
+    });
     paths
 }

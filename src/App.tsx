@@ -62,6 +62,7 @@ function App() {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			// 入力欄にフォーカスがある時はスキップ
 			if (document.activeElement?.tagName === "INPUT") return;
+			e.preventDefault();
 
 			if (e.key === "ArrowRight" || e.key === "ArrowDown") {
 				handleNext();
