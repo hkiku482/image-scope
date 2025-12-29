@@ -8,6 +8,18 @@ export const Canvas = ({ src }: CanvasProps) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const imageRef = useRef<HTMLImageElement | null>(null);
 	const [isImageLoaded, setIsImageLoaded] = useState(false);
+	const [imageResolution, setImageResolution] = useState<{
+		width: number;
+		height: number;
+	} | null>(null);
+	const [pickedColor, setPickedColor] = useState<{
+		r: number;
+		g: number;
+		b: number;
+		hex: string;
+	} | null>(null);
+	const [hoverColor, setHoverColor] = useState<string | null>(null);
+	const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
 	const {
 		scale,
@@ -39,6 +51,8 @@ export const Canvas = ({ src }: CanvasProps) => {
 		if (!src) {
 			imageRef.current = null;
 			setIsImageLoaded(false);
+			setImageResolution(null);
+			setPickedColor(null);
 			return;
 		}
 
@@ -47,8 +61,71 @@ export const Canvas = ({ src }: CanvasProps) => {
 		img.onload = () => {
 			imageRef.current = img;
 			setIsImageLoaded(true);
+			setImageResolution({ width: img.width, height: img.height });
+			setPickedColor(null);
 		};
 	}, [src]);
+
+	const handleContextMenu = (e: React.MouseEvent) => {
+		e.preventDefault();
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const dpr = window.devicePixelRatio || 1;
+		const x = (e.clientX - rect.left) * dpr;
+		const y = (e.clientY - rect.top) * dpr;
+
+		const ctx = canvas.getContext("2d", { willReadFrequently: true });
+		if (!ctx) return;
+
+		try {
+			const pixel = ctx.getImageData(x, y, 1, 1).data;
+			const r = pixel[0];
+			const g = pixel[1];
+			const b = pixel[2];
+			const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+			setPickedColor({ r, g, b, hex });
+		} catch (error) {
+			console.error("Failed to pick color:", error);
+		}
+	};
+
+	const onMouseMoveWithColor = (e: React.MouseEvent) => {
+		handleMouseMove(e);
+		setMousePos({ x: e.clientX, y: e.clientY });
+
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const dpr = window.devicePixelRatio || 1;
+		const x = (e.clientX - rect.left) * dpr;
+		const y = (e.clientY - rect.top) * dpr;
+
+		if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) {
+			setHoverColor(null);
+			return;
+		}
+
+		const ctx = canvas.getContext("2d", { willReadFrequently: true });
+		if (!ctx) return;
+
+		try {
+			const pixel = ctx.getImageData(x, y, 1, 1).data;
+			if (pixel[3] === 0) {
+				setHoverColor(null);
+				return;
+			}
+			const r = pixel[0];
+			const g = pixel[1];
+			const b = pixel[2];
+			const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+			setHoverColor(hex);
+		} catch {
+			setHoverColor(null);
+		}
+	};
 
 	// 描画処理
 	useEffect(() => {
@@ -57,7 +134,7 @@ export const Canvas = ({ src }: CanvasProps) => {
 		const img = imageRef.current;
 		if (!canvas || !container || !img || !isImageLoaded) return;
 
-		const ctx = canvas.getContext("2d");
+		const ctx = canvas.getContext("2d", { willReadFrequently: true });
 		if (!ctx) return;
 
 		// キャンバスサイズの調整 (High DPI対応)
@@ -110,14 +187,47 @@ export const Canvas = ({ src }: CanvasProps) => {
 	return (
 		<section
 			ref={containerRef}
-			className="flex-1 bg-[#202020] rounded-lg overflow-hidden flex items-center justify-center border border-[#505050] relative cursor-grab active:cursor-grabbing"
+			className="flex-1 bg-[#202020] rounded-lg overflow-hidden flex items-center justify-center border border-[#505050] relative cursor-default"
 			onMouseDown={handleMouseDown}
-			onMouseMove={handleMouseMove}
+			onMouseMove={onMouseMoveWithColor}
 			onMouseUp={handleMouseUp}
-			onMouseLeave={handleMouseUp}
+			onMouseLeave={(e) => {
+				handleMouseUp(e);
+				setHoverColor(null);
+			}}
 			onDoubleClick={handleDoubleClick}
+			onContextMenu={handleContextMenu}
 			aria-label="Image viewer"
 		>
+			{hoverColor && (
+				<div
+					className="fixed w-4 h-4 rounded-full border border-white/80 shadow-lg pointer-events-none z-50"
+					style={{
+						left: mousePos.x + 12,
+						top: mousePos.y + 12,
+						backgroundColor: hoverColor,
+					}}
+				/>
+			)}
+			{imageResolution && (
+				<div className="absolute top-2 left-2 z-10 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none font-mono flex items-center gap-3">
+					<span>
+						{imageResolution.width} x {imageResolution.height}
+					</span>
+					{pickedColor && (
+						<div className="flex items-center gap-2 border-l border-white/30 pl-3">
+							<div
+								className="w-3 h-3 rounded-sm border border-white/50"
+								style={{ backgroundColor: pickedColor.hex }}
+							/>
+							<span>{pickedColor.hex}</span>
+							<span className="text-white/60">
+								({pickedColor.r}, {pickedColor.g}, {pickedColor.b})
+							</span>
+						</div>
+					)}
+				</div>
+			)}
 			{src ? (
 				<canvas
 					ref={canvasRef}
