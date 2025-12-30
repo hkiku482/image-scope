@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 
 /**
- * HEXからHSVへの変換
+ * HEXからHSLへの変換
  */
-const hexToHsv = (hex: string) => {
+const hexToHsl = (hex: string) => {
 	let r = 0,
 		g = 0,
 		b = 0;
@@ -24,11 +24,15 @@ const hexToHsv = (hex: string) => {
 
 	const max = Math.max(r, g, b);
 	const min = Math.min(r, g, b);
+	const l = (max + min) / 2;
 	const d = max - min;
-	let hue = 0;
-	const s = max === 0 ? 0 : d / max;
-	const v = max;
 
+	let s = 0;
+	if (d !== 0) {
+		s = d / (1 - Math.abs(2 * l - 1));
+	}
+
+	let hue = 0;
 	if (max !== min) {
 		switch (max) {
 			case r:
@@ -44,7 +48,7 @@ const hexToHsv = (hex: string) => {
 		hue /= 6;
 	}
 
-	return { h: hue * 360, s: s * 100, v: v * 100 };
+	return { h: hue * 360, s: s * 100, l: l * 100 };
 };
 
 /**
@@ -77,7 +81,7 @@ export const ColorCircle = ({
 	onClose,
 }: ColorCircleProps) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const hsv = useMemo(() => hexToHsv(color), [color]);
+	const hsl = useMemo(() => hexToHsl(color), [color]);
 
 	const center = size / 2;
 	const radius = size * 0.45;
@@ -85,6 +89,9 @@ export const ColorCircle = ({
 	const innerRadius = radius - ringThickness - 2;
 
 	// 固定された三角形の頂点計算
+	// pColor: S=100, L=50 (純色)
+	// pWhite: L=100 (白)
+	// pBlack: L=0 (黒)
 	const trianglePoints = useMemo(() => {
 		const angleRad = (TRIANGLE_FIXED_ANGLE * Math.PI) / 180;
 		return {
@@ -105,15 +112,30 @@ export const ColorCircle = ({
 
 	const { pColor, pWhite, pBlack } = trianglePoints;
 
-	// 現在のS, Vから三角形内の位置を計算
+	// 現在のS, Lから三角形内の位置を計算
+	// HSLを正三角形内にマッピングする
+	// L=0 -> pBlack, L=1 -> pWhite
+	// S=1, L=0.5 -> pColor
 	const currentPos = useMemo(() => {
-		const s = hsv.s / 100;
-		const v = hsv.v / 100;
-		return {
-			x: pBlack.x + v * (pWhite.x - pBlack.x) + v * s * (pColor.x - pWhite.x),
-			y: pBlack.y + v * (pWhite.y - pBlack.y) + v * s * (pColor.y - pWhite.y),
+		const s = hsl.s / 100;
+		const l = hsl.l / 100;
+
+		// 簡易的なバイリニア補間（三角形内）
+		// Lの値によって、Black-White軸上の基準点を決める
+		// その基準点から、Sの値に応じてColor頂点方向へ移動する
+		const basePos = {
+			x: pBlack.x + l * (pWhite.x - pBlack.x),
+			y: pBlack.y + l * (pWhite.y - pBlack.y),
 		};
-	}, [pColor, pWhite, pBlack, hsv.s, hsv.v]);
+
+		// L=0.5の時にSが最大に広がるような補間
+		const sFactor = s * (1 - Math.abs(2 * l - 1));
+
+		return {
+			x: basePos.x + sFactor * (pColor.x - (pWhite.x + pBlack.x) / 2),
+			y: basePos.y + sFactor * (pColor.y - (pWhite.y + pBlack.y) / 2),
+		};
+	}, [pColor, pWhite, pBlack, hsl.s, hsl.l]);
 
 	// Canvas描画
 	useEffect(() => {
@@ -155,7 +177,7 @@ export const ColorCircle = ({
 			ctx.restore();
 		};
 
-		// 2. 三角形のグラデーション描画
+		// 2. 三角形のグラデーション描画 (HSL表現)
 		const renderTriangle = () => {
 			ctx.save();
 			ctx.beginPath();
@@ -165,29 +187,29 @@ export const ColorCircle = ({
 			ctx.closePath();
 			ctx.clip();
 
-			ctx.fillStyle = "#fff";
+			// 背景を黒から白へのグラデーションにする (S=0のライン)
+			const lGrad = ctx.createLinearGradient(
+				pBlack.x,
+				pBlack.y,
+				pWhite.x,
+				pWhite.y,
+			);
+			lGrad.addColorStop(0, "#000");
+			lGrad.addColorStop(1, "#fff");
+			ctx.fillStyle = lGrad;
 			ctx.fill();
 
+			// 彩度のグラデーションを重ねる
+			// 中心（S=0のライン）から pColor（S=100%）へのグラデーション
 			const sGrad = ctx.createLinearGradient(
 				(pWhite.x + pBlack.x) / 2,
 				(pWhite.y + pBlack.y) / 2,
 				pColor.x,
 				pColor.y,
 			);
-			sGrad.addColorStop(0, `hsla(${hsv.h}, 100%, 50%, 0)`);
-			sGrad.addColorStop(1, `hsla(${hsv.h}, 100%, 50%, 1)`);
+			sGrad.addColorStop(0, `hsla(${hsl.h}, 100%, 50%, 0)`);
+			sGrad.addColorStop(1, `hsla(${hsl.h}, 100%, 50%, 1)`);
 			ctx.fillStyle = sGrad;
-			ctx.fill();
-
-			const vGrad = ctx.createLinearGradient(
-				(pWhite.x + pColor.x) / 2,
-				(pWhite.y + pColor.y) / 2,
-				pBlack.x,
-				pBlack.y,
-			);
-			vGrad.addColorStop(0, "rgba(0,0,0,0)");
-			vGrad.addColorStop(1, "rgba(0,0,0,1)");
-			ctx.fillStyle = vGrad;
 			ctx.fill();
 
 			ctx.restore();
@@ -195,7 +217,7 @@ export const ColorCircle = ({
 
 		renderHueRing();
 		renderTriangle();
-	}, [hsv.h, pColor, pWhite, pBlack, size, center, radius, ringThickness]);
+	}, [hsl.h, pColor, pWhite, pBlack, size, center, radius, ringThickness]);
 
 	return (
 		<div
@@ -245,7 +267,7 @@ export const ColorCircle = ({
 					<title>Color Picker</title>
 					{/* 色相マーカー */}
 					<g
-						transform={`rotate(${hsv.h + HUE_ROTATION_OFFSET}, ${center}, ${center})`}
+						transform={`rotate(${hsl.h + HUE_ROTATION_OFFSET}, ${center}, ${center})`}
 					>
 						<rect
 							x={center + radius - ringThickness - 1}
@@ -259,13 +281,13 @@ export const ColorCircle = ({
 						/>
 					</g>
 
-					{/* S/Vマーカー */}
+					{/* S/Lマーカー */}
 					<circle
 						cx={currentPos.x}
 						cy={currentPos.y}
 						r={6}
 						fill="none"
-						stroke={hsv.v > 70 && hsv.s < 30 ? "black" : "white"}
+						stroke={hsl.l > 70 && hsl.s < 30 ? "black" : "white"}
 						strokeWidth={2}
 						className="drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]"
 					/>
@@ -296,9 +318,9 @@ export const ColorCircle = ({
 					</div>
 				</div>
 				<div className="text-white/80 flex flex-col gap-0.5 leading-tight">
-					<div>H: {Math.round(hsv.h)}°</div>
-					<div>S: {Math.round(hsv.s)}%</div>
-					<div>V: {Math.round(hsv.v)}%</div>
+					<div>H: {Math.round(hsl.h)}°</div>
+					<div>S: {Math.round(hsl.s)}%</div>
+					<div>L: {Math.round(hsl.l)}%</div>
 				</div>
 			</div>
 		</div>
