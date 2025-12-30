@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useCanvas } from "../hooks/useCanvas";
+import { ColorCircle } from "./ColorCircle";
+
+const DEFAULT_PICKED_COLOR = { r: 0, g: 0, b: 0, hex: "#000000" };
 
 export type CanvasProps = { src: string | null };
 
@@ -16,9 +19,10 @@ export const Canvas = ({ src }: CanvasProps) => {
 		g: number;
 		b: number;
 		hex: string;
-	} | null>(null);
+	}>(DEFAULT_PICKED_COLOR);
 	const [hoverColor, setHoverColor] = useState<string | null>(null);
 	const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+	const [showColorCircle, setShowColorCircle] = useState(false);
 
 	const {
 		scale,
@@ -50,7 +54,7 @@ export const Canvas = ({ src }: CanvasProps) => {
 		if (!src) {
 			imageRef.current = null;
 			setImageResolution(null);
-			setPickedColor(null);
+			setPickedColor(DEFAULT_PICKED_COLOR);
 			return;
 		}
 
@@ -62,7 +66,7 @@ export const Canvas = ({ src }: CanvasProps) => {
 		img.onload = () => {
 			imageRef.current = img;
 			setImageResolution({ width: img.width, height: img.height });
-			setPickedColor(null);
+			setPickedColor(DEFAULT_PICKED_COLOR);
 		};
 		img.src = src;
 	}, [src]);
@@ -87,6 +91,7 @@ export const Canvas = ({ src }: CanvasProps) => {
 			const b = pixel[2];
 			const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 			setPickedColor({ r, g, b, hex });
+			setShowColorCircle(true);
 		} catch (error) {
 			console.error("Failed to pick color:", error);
 		}
@@ -214,22 +219,39 @@ export const Canvas = ({ src }: CanvasProps) => {
 					}}
 				/>
 			)}
-			{imageResolution && (
-				<div className="absolute top-2 left-2 z-10 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none font-mono flex items-center gap-3">
-					<span>
-						{imageResolution.width} x {imageResolution.height}
-					</span>
-					{pickedColor && (
-						<div className="flex items-center gap-2 border-l border-white/30 pl-3">
-							<div
-								className="w-3 h-3 rounded-sm border border-white/50"
-								style={{ backgroundColor: pickedColor.hex }}
+			{pickedColor && imageResolution && (
+				<div className="absolute bottom-4 right-4 z-20">
+					{showColorCircle ? (
+						<div className="shadow-2xl">
+							<ColorCircle
+								color={pickedColor.hex}
+								size={200}
+								imageResolution={imageResolution}
+								onClose={() => setShowColorCircle(false)}
 							/>
-							<span>{pickedColor.hex}</span>
-							<span className="text-white/60">
-								({pickedColor.r}, {pickedColor.g}, {pickedColor.b})
-							</span>
 						</div>
+					) : (
+						<button
+							type="button"
+							onClick={() => setShowColorCircle(true)}
+							className="bg-black/50 hover:bg-black/70 text-white/70 hover:text-white p-2 rounded-full shadow-lg transition-all cursor-pointer border border-white/10"
+							title="Show Color Circle"
+						>
+							<svg
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<title>Show Color Circle</title>
+								<circle cx="12" cy="12" r="10" />
+								<path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8" />
+							</svg>
+						</button>
 					)}
 				</div>
 			)}
