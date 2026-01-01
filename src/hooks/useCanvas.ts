@@ -17,27 +17,38 @@ export const useCanvas = (src: string | null) => {
 	const handleWheel = useCallback(
 		(e: WheelEvent) => {
 			e.preventDefault();
-			const zoomSpeed = 0.02;
-			const factor = Math.exp(-e.deltaY * zoomSpeed);
-			const newScale = Math.min(Math.max(1, scale * factor), 20);
 
-			if (newScale !== scale) {
-				// マウスポインタを中心としたズーム
-				const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-				// コンテナの中心からのマウス位置を計算
-				const mouseX = e.clientX - rect.left - rect.width / 2;
-				const mouseY = e.clientY - rect.top - rect.height / 2;
+			if (e.ctrlKey) {
+				// Pinch-to-zoom (トラックパッド) または Ctrl + Scroll (マウス)
+				const zoomSpeed = 0.02;
+				const factor = Math.exp(-e.deltaY * zoomSpeed);
+				const newScale = Math.min(Math.max(1, scale * factor), 20);
 
-				// 現在のオフセットでのマウス位置の画像内座標（中心基準）
-				const imageX = (mouseX - offset.x) / scale;
-				const imageY = (mouseY - offset.y) / scale;
+				if (newScale !== scale) {
+					// マウスポインタを中心としたズーム
+					const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+					// コンテナの中心からのマウス位置を計算
+					const mouseX = e.clientX - rect.left - rect.width / 2;
+					const mouseY = e.clientY - rect.top - rect.height / 2;
 
-				// 新しいスケールでの新しいオフセットを計算
-				setOffset({
-					x: mouseX - imageX * newScale,
-					y: mouseY - imageY * newScale,
-				});
-				setScale(newScale);
+					// 現在のオフセットでのマウス位置の画像内座標（中心基準）
+					const imageX = (mouseX - offset.x) / scale;
+					const imageY = (mouseY - offset.y) / scale;
+
+					// 新しいスケールでの新しいオフセットを計算
+					setOffset({
+						x: mouseX - imageX * newScale,
+						y: mouseY - imageY * newScale,
+					});
+					setScale(newScale);
+				}
+			} else {
+				// 2本指スクロール (トラックパッド) による移動
+				// deltaX, deltaY をそのままオフセットに適用
+				setOffset((prev) => ({
+					x: prev.x - e.deltaX,
+					y: prev.y - e.deltaY,
+				}));
 			}
 		},
 		[scale, offset],
