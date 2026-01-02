@@ -28,7 +28,7 @@ export const ColorCircle = ({
 	onClose,
 }: ColorCircleProps) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const { hexColor: color, hsl } = useCanvasContext();
+	const { hexColor: color, hsl, mode, setMode } = useCanvasContext();
 
 	const center = size / 2;
 	const radius = size * 0.45;
@@ -269,6 +269,28 @@ export const ColorCircle = ({
 					<div>S: {Math.round(hsl.s)}%</div>
 					<div>L: {Math.round(hsl.l)}%</div>
 				</div>
+			</div>
+
+			<div className="w-full flex items-center justify-between px-1 mt-1">
+				<span className="text-white/40 text-[10px] uppercase font-bold tracking-wider">
+					Mode: {mode}
+				</span>
+				<button
+					type="button"
+					onClick={() => setMode(mode === "dynamic" ? "eyedropper" : "dynamic")}
+					className={`
+						relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none
+						${mode === "dynamic" ? "bg-blue-600" : "bg-gray-600"}
+					`}
+					aria-label="Toggle picker mode"
+				>
+					<span
+						className={`
+							inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
+							${mode === "dynamic" ? "translate-x-5" : "translate-x-0.5"}
+						`}
+					/>
+				</button>
 			</div>
 		</div>
 	);

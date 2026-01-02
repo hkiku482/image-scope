@@ -44,11 +44,16 @@ const hexToHsl = (hex: string) => {
 	return { h: hue * 360, s: s * 100, l: l * 100 };
 };
 
+export type ColorPickerMode = "dynamic" | "eyedropper";
+
 export const useColorCircle = () => {
+	const [mode, setMode] = useState<ColorPickerMode>("dynamic");
 	const [hexColor, setHexColor] = useState<string>("#000000");
 	const hsl = useMemo(() => hexToHsl(hexColor), [hexColor]);
 
 	return {
+		mode,
+		setMode,
 		hexColor,
 		setHexColor,
 		hsl,

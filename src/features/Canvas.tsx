@@ -32,6 +32,7 @@ export const Canvas = () => {
 		handleMouseMove,
 		handleMouseUp,
 		setHexColor,
+		mode,
 	} = useCanvasContext();
 
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -129,6 +130,10 @@ export const Canvas = () => {
 			const b = pixel[2];
 			const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 			setHoverColor(hex);
+
+			if (mode === "dynamic" && showColorCircle) {
+				setHexColor(hex);
+			}
 		} catch {
 			setHoverColor(null);
 		}

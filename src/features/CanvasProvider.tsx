@@ -5,7 +5,7 @@ import {
 	useContext,
 } from "react";
 import { useCanvas } from "../hooks/useCanvas";
-import { useColorCircle } from "../hooks/useColorCircle";
+import { type ColorPickerMode, useColorCircle } from "../hooks/useColorCircle";
 
 type CanvasContext = {
 	src: string | null;
@@ -14,6 +14,7 @@ type CanvasContext = {
 	isDragging: boolean;
 	hexColor: string;
 	hsl: { h: number; s: number; l: number };
+	mode: ColorPickerMode;
 	setSrc: (src: string | null) => void;
 	handleWheel: (e: WheelEvent) => void;
 	handleDoubleClick: () => void;
@@ -21,6 +22,7 @@ type CanvasContext = {
 	handleMouseMove: (e: MouseEvent) => void;
 	handleMouseUp: (e: MouseEvent) => void;
 	setHexColor: (hexColor: string) => void;
+	setMode: (mode: ColorPickerMode) => void;
 };
 const CanvasContext = createContext<CanvasContext | undefined>(undefined);
 
