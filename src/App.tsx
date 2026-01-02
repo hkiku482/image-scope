@@ -132,7 +132,7 @@ function App() {
 				{/* メインコンテンツエリア */}
 				<div className="flex flex-row flex-1 min-h-0 gap-2">
 					{/* サイドバー: ファイル一覧 */}
-					<div className="w-64 bg-[#303030] rounded-lg overflow-y-auto p-2 border border-[#505050]">
+					<div className="w-64 bg-[#303030] rounded-lg overflow-y-scroll overscroll-y-contain p-2 border border-[#505050]">
 						<div className="text-gray-400 text-xs mb-2 px-1 uppercase tracking-wider font-bold">
 							Items ({currentItems.length})
 						</div>
