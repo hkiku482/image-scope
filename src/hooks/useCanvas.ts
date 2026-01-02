@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
-export const useCanvas = (src: string | null) => {
+export const useCanvas = () => {
+	const [src, setSrc] = useState<string | null>(null);
 	const [scale, setScale] = useState(1);
 	const [offset, setOffset] = useState({ x: 0, y: 0 });
 	const [isDragging, setIsDragging] = useState(false);
@@ -84,9 +85,11 @@ export const useCanvas = (src: string | null) => {
 	}, []);
 
 	return {
+		src,
 		scale,
 		offset,
 		isDragging,
+		setSrc,
 		handleWheel,
 		handleDoubleClick,
 		handleMouseDown,

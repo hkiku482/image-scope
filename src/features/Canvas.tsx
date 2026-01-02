@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useCanvas } from "../hooks/useCanvas";
+import { useCanvasContext } from "./CanvasProvider";
 import { ColorCircle } from "./ColorCircle";
 
 const DEFAULT_PICKED_COLOR = { r: 0, g: 0, b: 0, hex: "#000000" };
 
-export type CanvasProps = { src: string | null };
-
-export const Canvas = ({ src }: CanvasProps) => {
+export const Canvas = () => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const imageRef = useRef<HTMLImageElement | null>(null);
@@ -25,6 +23,7 @@ export const Canvas = ({ src }: CanvasProps) => {
 	const [showColorCircle, setShowColorCircle] = useState(false);
 
 	const {
+		src,
 		scale,
 		offset,
 		handleWheel,
@@ -32,7 +31,7 @@ export const Canvas = ({ src }: CanvasProps) => {
 		handleMouseDown,
 		handleMouseMove,
 		handleMouseUp,
-	} = useCanvas(src);
+	} = useCanvasContext();
 
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
