@@ -17,7 +17,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             get_image_base64,
-            get_path_items
+            get_path_items,
+            get_parent_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

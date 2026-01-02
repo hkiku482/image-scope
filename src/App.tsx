@@ -1,9 +1,9 @@
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Canvas } from "./features/Canvas";
 import { CanvasProvider, useCanvasContext } from "./features/CanvasProvider";
 import { useDisplayImage } from "./hooks/useDisplayImage";
-import { useSearchPath } from "./hooks/useSearchPath";
+import { type PathItem, useSearchPath } from "./hooks/useSearchPath";
 
 function App() {
 	const {
@@ -11,6 +11,7 @@ function App() {
 		changeSearchPath,
 		getChildItems,
 		getChildItemsBySearchPath,
+		moveParentPath,
 	} = useSearchPath();
 	const {
 		imagePaths,
@@ -22,6 +23,19 @@ function App() {
 		handleSelectImage,
 	} = useDisplayImage();
 
+	const [currentItems, setCurrentItems] = useState<PathItem[]>([]);
+
+	const updateItems = useCallback(
+		async (items: PathItem[]) => {
+			setCurrentItems(items);
+			const images = items
+				.filter((item) => !item.is_directory)
+				.map((item) => item.path);
+			await handleSetImagePaths(images);
+		},
+		[handleSetImagePaths],
+	);
+
 	useEffect(() => {
 		const unlisten = getCurrentWebviewWindow().onDragDropEvent(
 			async (event) => {
@@ -29,8 +43,8 @@ function App() {
 					const paths = event.payload.paths;
 					if (paths.length > 0) {
 						const droppedPath = paths[0];
-						const images = await getChildItems(droppedPath);
-						handleSetImagePaths(images);
+						const items = await getChildItems(droppedPath);
+						await updateItems(items);
 					}
 				}
 			},
@@ -39,7 +53,7 @@ function App() {
 		return () => {
 			unlisten.then((fn) => fn());
 		};
-	}, [getChildItems, handleSetImagePaths]);
+	}, [getChildItems, updateItems]);
 
 	const onPathChange = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,11 +67,26 @@ function App() {
 	const onSubmit = useCallback(
 		async (e?: React.FormEvent<HTMLFormElement>) => {
 			e?.preventDefault();
-			const images = await getChildItemsBySearchPath();
-			handleSetImagePaths(images);
+			const items = await getChildItemsBySearchPath();
+			await updateItems(items);
 		},
-		[getChildItemsBySearchPath, handleSetImagePaths],
+		[getChildItemsBySearchPath, updateItems],
 	);
+
+	const handleDirectoryClick = useCallback(
+		async (path: string) => {
+			const items = await getChildItems(path);
+			await updateItems(items);
+		},
+		[getChildItems, updateItems],
+	);
+
+	const handleBackClick = useCallback(async () => {
+		const items = await moveParentPath();
+		if (items) {
+			await updateItems(items);
+		}
+	}, [moveParentPath, updateItems]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,18 +134,49 @@ function App() {
 					{/* サイドバー: ファイル一覧 */}
 					<div className="w-64 bg-[#303030] rounded-lg overflow-y-auto p-2 border border-[#505050]">
 						<div className="text-gray-400 text-xs mb-2 px-1 uppercase tracking-wider font-bold">
-							Images ({imagePaths.length})
+							Items ({currentItems.length})
 						</div>
 						<ul className="space-y-1">
-							{imagePaths.map((path, index) => {
-								const fileName = path.split(/[/\\]/).pop();
+							{searchPath && (
+								<li>
+									<button
+										type="button"
+										onClick={handleBackClick}
+										className="w-full text-left px-2 py-1 rounded text-sm truncate transition-colors text-gray-300 hover:bg-[#404040] hover:text-white flex items-center gap-1.5"
+									>
+										<span className="opacity-60">📁</span>
+										<span className="font-bold">..</span>
+									</button>
+								</li>
+							)}
+							{currentItems.map((item) => {
+								const fileName = item.path.split(/[/\\]/).pop();
+								const isDir = item.is_directory;
+
+								if (isDir) {
+									return (
+										<li key={item.path}>
+											<button
+												type="button"
+												onClick={() => handleDirectoryClick(item.path)}
+												className="w-full text-left px-2 py-1 rounded text-sm truncate transition-colors text-blue-400 hover:bg-[#404040] hover:text-blue-300 flex items-center gap-1.5"
+												title={fileName}
+											>
+												<span className="opacity-80">📁</span>
+												<span className="font-medium">{fileName}</span>
+											</button>
+										</li>
+									);
+								}
+
+								const imgIndex = imagePaths.indexOf(item.path);
 								return (
-									<li key={path}>
+									<li key={item.path}>
 										<button
 											type="button"
-											onClick={() => handleSelectImage(index)}
+											onClick={() => handleSelectImage(imgIndex)}
 											className={`w-full text-left px-2 py-1 rounded text-sm truncate transition-colors ${
-												index === currentImageIndex
+												imgIndex === currentImageIndex
 													? "bg-blue-600 text-white"
 													: "text-gray-300 hover:bg-[#404040] hover:text-white"
 											}`}
