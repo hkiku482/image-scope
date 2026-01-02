@@ -5,18 +5,22 @@ import {
 	useContext,
 } from "react";
 import { useCanvas } from "../hooks/useCanvas";
+import { useColorCircle } from "../hooks/useColorCircle";
 
 type CanvasContext = {
 	src: string | null;
 	scale: number;
 	offset: { x: number; y: number };
 	isDragging: boolean;
+	hexColor: string;
+	hsl: { h: number; s: number; l: number };
 	setSrc: (src: string | null) => void;
 	handleWheel: (e: WheelEvent) => void;
 	handleDoubleClick: () => void;
 	handleMouseDown: (e: MouseEvent) => void;
 	handleMouseMove: (e: MouseEvent) => void;
 	handleMouseUp: (e: MouseEvent) => void;
+	setHexColor: (hexColor: string) => void;
 };
 const CanvasContext = createContext<CanvasContext | undefined>(undefined);
 
@@ -25,8 +29,11 @@ export type CanvasProviderProps = {
 };
 export const CanvasProvider = ({ children }: CanvasProviderProps) => {
 	const useCanvasValues = useCanvas();
+	const useColorCircleValues = useColorCircle();
 	return (
-		<CanvasContext.Provider value={{ ...useCanvasValues }}>
+		<CanvasContext.Provider
+			value={{ ...useCanvasValues, ...useColorCircleValues }}
+		>
 			{children}
 		</CanvasContext.Provider>
 	);

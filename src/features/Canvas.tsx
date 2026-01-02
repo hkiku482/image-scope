@@ -31,6 +31,7 @@ export const Canvas = () => {
 		handleMouseDown,
 		handleMouseMove,
 		handleMouseUp,
+		setHexColor,
 	} = useCanvasContext();
 
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -90,6 +91,7 @@ export const Canvas = () => {
 			const b = pixel[2];
 			const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 			setPickedColor({ r, g, b, hex });
+			setHexColor(hex);
 			setShowColorCircle(true);
 		} catch (error) {
 			console.error("Failed to pick color:", error);
@@ -223,7 +225,6 @@ export const Canvas = () => {
 					{showColorCircle ? (
 						<div className="shadow-2xl">
 							<ColorCircle
-								color={pickedColor.hex}
 								size={200}
 								imageResolution={imageResolution}
 								onClose={() => setShowColorCircle(false)}
