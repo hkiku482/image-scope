@@ -58,7 +58,6 @@ function App() {
 	const onPathChange = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const path = e.target.value;
-			if (!path) return;
 			changeSearchPath(path);
 		},
 		[changeSearchPath],
