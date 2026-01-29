@@ -1,3 +1,10 @@
+import {
+	IconArrowBackUp,
+	IconFolder,
+	IconLayoutSidebar,
+	IconLayoutSidebarRight,
+	IconSearch,
+} from "@tabler/icons-react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useCallback, useEffect, useState } from "react";
 import { Canvas } from "./features/Canvas";
@@ -24,6 +31,7 @@ function App() {
 	} = useDisplayImage();
 
 	const [currentItems, setCurrentItems] = useState<PathItem[]>([]);
+	const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
 	const updateItems = useCallback(
 		async (items: PathItem[]) => {
@@ -112,6 +120,19 @@ function App() {
 				{/* コントロールパネル */}
 				<form onSubmit={onSubmit}>
 					<div className="flex flex-row gap-2">
+						<button
+							type="button"
+							onClick={() => setIsSidebarVisible((prev) => !prev)}
+							aria-label={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
+							title={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
+							className="p-2 bg-[#505050] text-white rounded mb-2 hover:bg-[#606060] active:bg-[#505050] transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-bold whitespace-nowrap shadow-lg"
+						>
+							{isSidebarVisible ? (
+								<IconLayoutSidebar size={16} />
+							) : (
+								<IconLayoutSidebarRight size={16} />
+							)}
+						</button>
 						<input
 							type="text"
 							value={searchPath ?? ""}
@@ -121,9 +142,11 @@ function App() {
 						/>
 						<button
 							type="submit"
+							aria-label="Search"
+							title="Search"
 							className="px-6 bg-blue-600 text-white rounded mb-2 hover:bg-blue-500 active:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-bold whitespace-nowrap shadow-lg"
 						>
-							Search
+							<IconSearch size={16} />
 						</button>
 					</div>
 				</form>
@@ -131,63 +154,65 @@ function App() {
 				{/* メインコンテンツエリア */}
 				<div className="flex flex-row flex-1 min-h-0 gap-2">
 					{/* サイドバー: ファイル一覧 */}
-					<div className="w-64 bg-[#303030] rounded-lg overflow-y-scroll overscroll-y-contain p-2 border border-[#505050]">
-						<div className="text-gray-400 text-xs mb-2 px-1 uppercase tracking-wider font-bold">
-							Items ({currentItems.length})
-						</div>
-						<ul className="space-y-1">
-							{searchPath && (
-								<li>
-									<button
-										type="button"
-										onClick={handleBackClick}
-										className="w-full text-left px-2 py-1 rounded text-sm truncate transition-colors text-gray-300 hover:bg-[#404040] hover:text-white flex items-center gap-1.5"
-									>
-										<span className="opacity-60">📁</span>
-										<span className="font-bold">..</span>
-									</button>
-								</li>
-							)}
-							{currentItems.map((item) => {
-								const fileName = item.path.split(/[/\\]/).pop();
-								const isDir = item.is_directory;
+					{isSidebarVisible && (
+						<div className="w-64 bg-[#303030] rounded-lg overflow-y-scroll overscroll-y-contain p-2 border border-[#505050]">
+							<div className="text-gray-400 text-xs mb-2 px-1 uppercase tracking-wider font-bold">
+								Items ({currentItems.length})
+							</div>
+							<ul className="space-y-1">
+								{searchPath && (
+									<li>
+										<button
+											type="button"
+											onClick={handleBackClick}
+											className="w-full text-left px-2 py-1 rounded text-sm truncate transition-colors text-gray-300 hover:bg-[#404040] hover:text-white flex items-center gap-1.5"
+										>
+											<IconArrowBackUp size={16} className="opacity-60" />
+											<span className="font-bold">..</span>
+										</button>
+									</li>
+								)}
+								{currentItems.map((item) => {
+									const fileName = item.path.split(/[/\\]/).pop();
+									const isDir = item.is_directory;
 
-								if (isDir) {
+									if (isDir) {
+										return (
+											<li key={item.path}>
+												<button
+													type="button"
+													onClick={() => handleDirectoryClick(item.path)}
+													className="w-full text-left px-2 py-1 rounded text-sm truncate transition-colors text-blue-400 hover:bg-[#404040] hover:text-blue-300 flex items-center gap-1.5"
+													title={fileName}
+												>
+													<IconFolder size={16} className="opacity-80" />
+													<span className="font-medium">{fileName}</span>
+												</button>
+											</li>
+										);
+									}
+
+									const imgIndex = imagePaths.indexOf(item.path);
 									return (
 										<li key={item.path}>
 											<button
 												type="button"
-												onClick={() => handleDirectoryClick(item.path)}
-												className="w-full text-left px-2 py-1 rounded text-sm truncate transition-colors text-blue-400 hover:bg-[#404040] hover:text-blue-300 flex items-center gap-1.5"
+												onClick={() => handleSelectImage(imgIndex)}
+												className={`w-full text-left px-2 py-1 rounded text-sm truncate transition-colors ${
+													imgIndex === currentImageIndex
+														? "bg-blue-600 text-white"
+														: "text-gray-300 hover:bg-[#404040] hover:text-white"
+												}`}
 												title={fileName}
 											>
-												<span className="opacity-80">📁</span>
-												<span className="font-medium">{fileName}</span>
+												{fileName}
 											</button>
 										</li>
 									);
-								}
-
-								const imgIndex = imagePaths.indexOf(item.path);
-								return (
-									<li key={item.path}>
-										<button
-											type="button"
-											onClick={() => handleSelectImage(imgIndex)}
-											className={`w-full text-left px-2 py-1 rounded text-sm truncate transition-colors ${
-												imgIndex === currentImageIndex
-													? "bg-blue-600 text-white"
-													: "text-gray-300 hover:bg-[#404040] hover:text-white"
-											}`}
-											title={fileName}
-										>
-											{fileName}
-										</button>
-									</li>
-								);
-							})}
-						</ul>
-					</div>
+								})}
+							</ul>
+						</div>
+					)}
 
 					{/* 画像表示エリア (Canvas) */}
 					<Canvas />
