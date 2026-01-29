@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCanvasContext } from "./CanvasProvider";
 import { ColorCircle } from "./ColorCircle";
 
@@ -8,6 +8,9 @@ export const Canvas = () => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const imageRef = useRef<HTMLImageElement | null>(null);
+	const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+	const animationFrameRef = useRef<number | null>(null);
+	const colorUpdateFrameRef = useRef<number | null>(null);
 	const [imageResolution, setImageResolution] = useState<{
 		width: number;
 		height: number;
@@ -89,15 +92,13 @@ export const Canvas = () => {
 	const handleContextMenu = (e: React.MouseEvent) => {
 		e.preventDefault();
 		const canvas = canvasRef.current;
-		if (!canvas) return;
+		const ctx = ctxRef.current;
+		if (!canvas || !ctx) return;
 
 		const rect = canvas.getBoundingClientRect();
 		const dpr = window.devicePixelRatio || 1;
 		const x = (e.clientX - rect.left) * dpr;
 		const y = (e.clientY - rect.top) * dpr;
-
-		const ctx = canvas.getContext("2d", { willReadFrequently: true });
-		if (!ctx) return;
 
 		try {
 			const pixel = ctx.getImageData(x, y, 1, 1).data;
@@ -113,47 +114,59 @@ export const Canvas = () => {
 		}
 	};
 
+	const updateHoverColor = useCallback(
+		(clientX: number, clientY: number) => {
+			const canvas = canvasRef.current;
+			const ctx = ctxRef.current;
+			if (!canvas || !ctx) return;
+
+			const rect = canvas.getBoundingClientRect();
+			const dpr = window.devicePixelRatio || 1;
+			const x = (clientX - rect.left) * dpr;
+			const y = (clientY - rect.top) * dpr;
+
+			if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) {
+				setHoverColor(null);
+				return;
+			}
+
+			try {
+				const pixel = ctx.getImageData(x, y, 1, 1).data;
+				if (pixel[3] === 0) {
+					setHoverColor(null);
+					return;
+				}
+				const r = pixel[0];
+				const g = pixel[1];
+				const b = pixel[2];
+				const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+				setHoverColor(hex);
+
+				if (mode === "dynamic" && showColorCircle) {
+					setHexColor(hex);
+				}
+			} catch {
+				setHoverColor(null);
+			}
+		},
+		[mode, showColorCircle, setHexColor],
+	);
+
 	const onMouseMoveWithColor = (e: React.MouseEvent) => {
 		handleMouseMove(e);
 		setMousePos({ x: e.clientX, y: e.clientY });
 
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-
-		const rect = canvas.getBoundingClientRect();
-		const dpr = window.devicePixelRatio || 1;
-		const x = (e.clientX - rect.left) * dpr;
-		const y = (e.clientY - rect.top) * dpr;
-
-		if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) {
-			setHoverColor(null);
-			return;
+		// 色取得処理をスロットリング
+		if (colorUpdateFrameRef.current !== null) {
+			cancelAnimationFrame(colorUpdateFrameRef.current);
 		}
-
-		const ctx = canvas.getContext("2d", { willReadFrequently: true });
-		if (!ctx) return;
-
-		try {
-			const pixel = ctx.getImageData(x, y, 1, 1).data;
-			if (pixel[3] === 0) {
-				setHoverColor(null);
-				return;
-			}
-			const r = pixel[0];
-			const g = pixel[1];
-			const b = pixel[2];
-			const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
-			setHoverColor(hex);
-
-			if (mode === "dynamic" && showColorCircle) {
-				setHexColor(hex);
-			}
-		} catch {
-			setHoverColor(null);
-		}
+		colorUpdateFrameRef.current = requestAnimationFrame(() => {
+			updateHoverColor(e.clientX, e.clientY);
+			colorUpdateFrameRef.current = null;
+		});
 	};
 
-	// 描画処理
+	// 描画処理（requestAnimationFrameでスロットリング）
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		const container = containerRef.current;
@@ -161,47 +174,83 @@ export const Canvas = () => {
 
 		if (!canvas || !container) return;
 
-		const ctx = canvas.getContext("2d", { willReadFrequently: true });
-		if (!ctx) return;
-
-		// キャンバスサイズの調整 (High DPI対応)
-		const dpr = window.devicePixelRatio || 1;
-		const { width, height } = containerSize;
-		if (width === 0 || height === 0) return;
-
-		canvas.width = width * dpr;
-		canvas.height = height * dpr;
-		canvas.style.width = `${width}px`;
-		canvas.style.height = `${height}px`;
-
-		ctx.scale(dpr, dpr);
-		ctx.clearRect(0, 0, width, height);
-
-		// 画像がない、または読み込み中の場合はクリアのみ行い終了
-		if (!img || !imageResolution) return;
-
-		// 画像の描画位置の計算
-		const containerRatio = width / height;
-		const imageRatio = img.width / img.height;
-		let baseScale = 1;
-		if (containerRatio > imageRatio) {
-			baseScale = height / img.height;
-		} else {
-			baseScale = width / img.width;
+		// 既存のアニメーションフレームをキャンセル
+		if (animationFrameRef.current !== null) {
+			cancelAnimationFrame(animationFrameRef.current);
 		}
 
-		const drawWidth = img.width * baseScale * scale;
-		const drawHeight = img.height * baseScale * scale;
+		animationFrameRef.current = requestAnimationFrame(() => {
+			// キャンバスサイズの調整 (High DPI対応)
+			const dpr = window.devicePixelRatio || 1;
+			const { width, height } = containerSize;
+			if (width === 0 || height === 0) {
+				animationFrameRef.current = null;
+				return;
+			}
 
-		// 中心位置 + オフセット
-		const x = width / 2 + offset.x - drawWidth / 2;
-		const y = height / 2 + offset.y - drawHeight / 2;
+			const needsResize =
+				canvas.width !== width * dpr || canvas.height !== height * dpr;
 
-		// 補間設定
-		ctx.imageSmoothingEnabled = true;
-		ctx.imageSmoothingQuality = "high";
+			// コンテキストの初期化または再取得
+			if (!ctxRef.current || needsResize) {
+				ctxRef.current = canvas.getContext("2d", {
+					willReadFrequently: true,
+				});
+			}
 
-		ctx.drawImage(img, x, y, drawWidth, drawHeight);
+			const ctx = ctxRef.current;
+			if (!ctx) {
+				animationFrameRef.current = null;
+				return;
+			}
+
+			if (needsResize) {
+				canvas.width = width * dpr;
+				canvas.height = height * dpr;
+				canvas.style.width = `${width}px`;
+				canvas.style.height = `${height}px`;
+				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			}
+
+			ctx.clearRect(0, 0, width, height);
+
+			// 画像がない、または読み込み中の場合はクリアのみ行い終了
+			if (!img || !imageResolution) {
+				animationFrameRef.current = null;
+				return;
+			}
+
+			// 画像の描画位置の計算
+			const containerRatio = width / height;
+			const imageRatio = img.width / img.height;
+			let baseScale = 1;
+			if (containerRatio > imageRatio) {
+				baseScale = height / img.height;
+			} else {
+				baseScale = width / img.width;
+			}
+
+			const drawWidth = img.width * baseScale * scale;
+			const drawHeight = img.height * baseScale * scale;
+
+			// 中心位置 + オフセット（整数に丸める）
+			const x = Math.round(width / 2 + offset.x - drawWidth / 2);
+			const y = Math.round(height / 2 + offset.y - drawHeight / 2);
+
+			// 補間設定
+			ctx.imageSmoothingEnabled = true;
+			ctx.imageSmoothingQuality = "high";
+
+			ctx.drawImage(img, x, y, drawWidth, drawHeight);
+			animationFrameRef.current = null;
+		});
+
+		return () => {
+			if (animationFrameRef.current !== null) {
+				cancelAnimationFrame(animationFrameRef.current);
+				animationFrameRef.current = null;
+			}
+		};
 	}, [scale, offset, containerSize, imageResolution]);
 
 	useEffect(() => {
@@ -213,6 +262,18 @@ export const Canvas = () => {
 			container.removeEventListener("wheel", handleWheel);
 		};
 	}, [handleWheel]);
+
+	// クリーンアップ
+	useEffect(() => {
+		return () => {
+			if (animationFrameRef.current !== null) {
+				cancelAnimationFrame(animationFrameRef.current);
+			}
+			if (colorUpdateFrameRef.current !== null) {
+				cancelAnimationFrame(colorUpdateFrameRef.current);
+			}
+		};
+	}, []);
 
 	return (
 		<section

@@ -36,19 +36,19 @@ export const useCanvas = () => {
 					const imageX = (mouseX - offset.x) / scale;
 					const imageY = (mouseY - offset.y) / scale;
 
-					// 新しいスケールでの新しいオフセットを計算
+					// 新しいスケールでの新しいオフセットを計算（整数に丸める）
 					setOffset({
-						x: mouseX - imageX * newScale,
-						y: mouseY - imageY * newScale,
+						x: Math.round(mouseX - imageX * newScale),
+						y: Math.round(mouseY - imageY * newScale),
 					});
 					setScale(newScale);
 				}
 			} else {
 				// 2本指スクロール (トラックパッド) による移動
-				// deltaX, deltaY をそのままオフセットに適用
+				// deltaX, deltaY をそのままオフセットに適用（整数に丸める）
 				setOffset((prev) => ({
-					x: prev.x - e.deltaX,
-					y: prev.y - e.deltaY,
+					x: Math.round(prev.x - e.deltaX),
+					y: Math.round(prev.y - e.deltaY),
 				}));
 			}
 		},
@@ -74,7 +74,10 @@ export const useCanvas = () => {
 		(e: React.MouseEvent) => {
 			e.preventDefault();
 			if (!isDragging) return;
-			setOffset({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
+			setOffset({
+				x: Math.round(e.clientX - startPos.x),
+				y: Math.round(e.clientY - startPos.y),
+			});
 		},
 		[isDragging, startPos],
 	);
