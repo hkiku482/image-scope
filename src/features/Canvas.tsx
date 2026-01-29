@@ -38,16 +38,30 @@ export const Canvas = () => {
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
 	useEffect(() => {
+		const container = containerRef.current;
+		if (!container) return;
+
 		const updateSize = () => {
-			if (containerRef.current) {
-				const rect = containerRef.current.getBoundingClientRect();
-				setContainerSize({ width: rect.width, height: rect.height });
-			}
+			const rect = container.getBoundingClientRect();
+			setContainerSize({ width: rect.width, height: rect.height });
 		};
 
+		// 初回サイズ設定
 		updateSize();
+
+		// ResizeObserverでコンテナのサイズ変更を監視（サイドバーの表示/非表示も検出）
+		const resizeObserver = new ResizeObserver(() => {
+			updateSize();
+		});
+		resizeObserver.observe(container);
+
+		// ウィンドウリサイズも監視（念のため）
 		window.addEventListener("resize", updateSize);
-		return () => window.removeEventListener("resize", updateSize);
+
+		return () => {
+			resizeObserver.disconnect();
+			window.removeEventListener("resize", updateSize);
+		};
 	}, []);
 
 	// 画像の読み込み
