@@ -19,6 +19,7 @@ function App() {
 		getChildItems,
 		getChildItemsBySearchPath,
 		moveParentPath,
+		loadHistory,
 	} = useSearchPath();
 	const {
 		imagePaths,
@@ -43,6 +44,17 @@ function App() {
 		},
 		[handleSetImagePaths],
 	);
+
+	// 起動時に履歴を読み込む
+	useEffect(() => {
+		const init = async () => {
+			const result = await loadHistory();
+			if (result) {
+				await updateItems(result.items);
+			}
+		};
+		init();
+	}, [loadHistory, updateItems]);
 
 	useEffect(() => {
 		const unlisten = getCurrentWebviewWindow().onDragDropEvent(
@@ -89,9 +101,9 @@ function App() {
 	);
 
 	const handleBackClick = useCallback(async () => {
-		const items = await moveParentPath();
-		if (items) {
-			await updateItems(items);
+		const result = await moveParentPath();
+		if (result) {
+			await updateItems(result.items);
 		}
 	}, [moveParentPath, updateItems]);
 

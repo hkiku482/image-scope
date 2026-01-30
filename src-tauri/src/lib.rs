@@ -1,6 +1,8 @@
+mod history;
 mod load_image;
 mod storage;
 
+pub use history::*;
 pub use load_image::*;
 pub use storage::*;
 
@@ -18,7 +20,9 @@ pub fn run() {
             greet,
             get_image_base64,
             get_path_items,
-            get_parent_path
+            get_parent_path,
+            write_history,
+            read_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
