@@ -9,29 +9,30 @@ pub struct PathItem {
 }
 
 #[tauri::command]
-pub fn get_path_items(base_path: &Path) -> Vec<PathItem> {
-    let entries = std::fs::read_dir(base_path)
-        .map(|entries| {
-            entries
-                .filter_map(|entry| entry.ok().map(|e| e.path()))
-                .collect()
-        })
-        .unwrap_or_else(|_| Vec::new());
+pub async fn get_path_items(base_path: &Path) -> Result<Vec<PathItem>, String> {
+    let mut dir = match tokio::fs::read_dir(base_path).await {
+        Ok(dir) => dir,
+        Err(_) => return Ok(Vec::new()),
+    };
 
-    let allowed_entries = entries.into_iter().filter(|entry| {
-        if entry.is_dir() {
-            return true;
+    let mut items = Vec::new();
+    while let Ok(Some(entry)) = dir.next_entry().await {
+        let path = entry.path();
+        let is_directory = tokio::fs::metadata(&path)
+            .await
+            .map(|meta| meta.is_dir())
+            .unwrap_or(false);
+
+        if is_directory {
+            items.push(PathItem { is_directory, path });
+            continue;
         }
-        let extension = entry.extension().and_then(|ext| ext.to_str()).unwrap_or("");
-        ALLOWED_EXTENSIONS_LOWERCASE.contains(&extension.to_lowercase().as_str())
-    });
 
-    let mut items = allowed_entries
-        .map(|path| PathItem {
-            is_directory: path.is_dir(),
-            path,
-        })
-        .collect::<Vec<PathItem>>();
+        let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
+        if ALLOWED_EXTENSIONS_LOWERCASE.contains(&extension.to_lowercase().as_str()) {
+            items.push(PathItem { is_directory, path });
+        }
+    }
 
     items.sort_by(|a, b| {
         // ディレクトリを優先
@@ -44,13 +45,13 @@ pub fn get_path_items(base_path: &Path) -> Vec<PathItem> {
             ord => ord,
         }
     });
-    items
+    Ok(items)
 }
 
 #[tauri::command]
-pub fn get_parent_path(path: &Path) -> PathBuf {
-    match path.parent() {
+pub async fn get_parent_path(path: &Path) -> Result<PathBuf, String> {
+    Ok(match path.parent() {
         Some(parent) => parent.to_path_buf(),
         None => path.to_path_buf(), // すでにルートの場合はそのまま返す
-    }
+    })
 }

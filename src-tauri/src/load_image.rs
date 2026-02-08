@@ -1,11 +1,10 @@
-use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
 use base64::{engine::general_purpose, Engine as _};
 
 #[tauri::command]
-pub fn get_image_base64(path: &Path) -> Result<String, String> {
+pub async fn get_image_base64(path: &Path) -> Result<String, String> {
     let kind = infer::get_from_path(path)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Could not determine file type".to_string())?;
@@ -15,7 +14,7 @@ pub fn get_image_base64(path: &Path) -> Result<String, String> {
         return Err(format!("Unsupported image type: {}", mime));
     }
 
-    let bytes = fs::read(path).map_err(|e| e.to_string())?;
+    let bytes = tokio::fs::read(path).await.map_err(|e| e.to_string())?;
     let base64_str = general_purpose::STANDARD.encode(bytes);
 
     Ok(format!("data:{};base64,{}", mime, base64_str))
