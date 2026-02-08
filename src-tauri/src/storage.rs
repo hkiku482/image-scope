@@ -10,6 +10,12 @@ pub struct PathItem {
 
 #[tauri::command]
 pub async fn get_path_items(base_path: &Path) -> Result<Vec<PathItem>, String> {
+    let base_path = if base_path.is_dir() {
+        base_path.to_path_buf()
+    } else {
+        base_path.parent().unwrap_or(base_path).to_path_buf()
+    };
+
     let mut dir = match tokio::fs::read_dir(base_path).await {
         Ok(dir) => dir,
         Err(_) => return Ok(Vec::new()),

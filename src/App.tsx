@@ -75,14 +75,6 @@ function App() {
 		};
 	}, [getChildItems, updateItems]);
 
-	const onPathChange = useCallback(
-		async (e: React.ChangeEvent<HTMLInputElement>) => {
-			const path = e.target.value;
-			changeSearchPath(path);
-		},
-		[changeSearchPath],
-	);
-
 	const onSubmit = useCallback(
 		async (e?: React.FormEvent<HTMLFormElement>) => {
 			e?.preventDefault();
@@ -126,6 +118,14 @@ function App() {
 		};
 	}, [handleNext, handlePrevious]);
 
+	useEffect(() => {
+		if (imagePaths.length === 0) return;
+		const selectedPath = imagePaths[currentImageIndex];
+		if (selectedPath) {
+			changeSearchPath(selectedPath);
+		}
+	}, [changeSearchPath, currentImageIndex, imagePaths]);
+
 	return (
 		<CanvasProvider>
 			<main className="bg-[#404040] h-screen p-2 flex flex-col overflow-hidden">
@@ -148,7 +148,7 @@ function App() {
 						<input
 							type="text"
 							value={searchPath ?? ""}
-							onChange={onPathChange}
+							readOnly
 							placeholder="Directory path..."
 							className="bg-[#303030] text-white border border-[#606060] p-1 rounded w-full placeholder-gray-400 focus:outline-none focus:border-blue-500 mb-2"
 						/>
