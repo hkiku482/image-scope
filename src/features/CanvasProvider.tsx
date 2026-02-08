@@ -11,7 +11,6 @@ type CanvasContext = {
 	src: string | null;
 	scale: number;
 	offset: { x: number; y: number };
-	isDragging: boolean;
 	hexColor: string;
 	hsl: { h: number; s: number; l: number };
 	mode: ColorPickerMode;

@@ -91,7 +91,6 @@ export const useCanvas = () => {
 		src,
 		scale,
 		offset,
-		isDragging,
 		setSrc,
 		handleWheel,
 		handleDoubleClick,

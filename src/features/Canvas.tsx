@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { RGBColor } from "../types/color";
+import { getPixelColor } from "../utils/color";
 import { useCanvasContext } from "./CanvasProvider";
 import { ColorCircle } from "./ColorCircle";
 
-const DEFAULT_PICKED_COLOR = { r: 0, g: 0, b: 0, hex: "#000000" };
+const DEFAULT_PICKED_COLOR: RGBColor = { r: 0, g: 0, b: 0, hex: "#000000" };
 
 export const Canvas = () => {
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -15,12 +17,8 @@ export const Canvas = () => {
 		width: number;
 		height: number;
 	} | null>(null);
-	const [pickedColor, setPickedColor] = useState<{
-		r: number;
-		g: number;
-		b: number;
-		hex: string;
-	}>(DEFAULT_PICKED_COLOR);
+	const [pickedColor, setPickedColor] =
+		useState<RGBColor>(DEFAULT_PICKED_COLOR);
 	const [hoverColor, setHoverColor] = useState<string | null>(null);
 	const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 	const [showColorCircle, setShowColorCircle] = useState(false);
@@ -100,17 +98,11 @@ export const Canvas = () => {
 		const x = (e.clientX - rect.left) * dpr;
 		const y = (e.clientY - rect.top) * dpr;
 
-		try {
-			const pixel = ctx.getImageData(x, y, 1, 1).data;
-			const r = pixel[0];
-			const g = pixel[1];
-			const b = pixel[2];
-			const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
-			setPickedColor({ r, g, b, hex });
-			setHexColor(hex);
+		const color = getPixelColor(ctx, x, y);
+		if (color) {
+			setPickedColor(color);
+			setHexColor(color.hex);
 			setShowColorCircle(true);
-		} catch (error) {
-			console.error("Failed to pick color:", error);
 		}
 	};
 
@@ -130,22 +122,13 @@ export const Canvas = () => {
 				return;
 			}
 
-			try {
-				const pixel = ctx.getImageData(x, y, 1, 1).data;
-				if (pixel[3] === 0) {
-					setHoverColor(null);
-					return;
-				}
-				const r = pixel[0];
-				const g = pixel[1];
-				const b = pixel[2];
-				const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
-				setHoverColor(hex);
-
+			const color = getPixelColor(ctx, x, y);
+			if (color) {
+				setHoverColor(color.hex);
 				if (mode === "dynamic" && showColorCircle) {
-					setHexColor(hex);
+					setHexColor(color.hex);
 				}
-			} catch {
+			} else {
 				setHoverColor(null);
 			}
 		},

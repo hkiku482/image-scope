@@ -56,6 +56,11 @@ pub async fn get_path_items(base_path: &Path) -> Result<Vec<PathItem>, String> {
 
 #[tauri::command]
 pub async fn get_parent_path(path: &Path) -> Result<PathBuf, String> {
+    let path = if path.is_dir() {
+        path.to_path_buf()
+    } else {
+        path.parent().unwrap_or(path).to_path_buf()
+    };
     Ok(match path.parent() {
         Some(parent) => parent.to_path_buf(),
         None => path.to_path_buf(), // すでにルートの場合はそのまま返す

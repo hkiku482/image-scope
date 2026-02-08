@@ -128,6 +128,7 @@ function App() {
 
 	return (
 		<CanvasProvider>
+			<CanvasSyncEffect src={currentImage} />
 			<main className="bg-[#404040] h-screen p-2 flex flex-col overflow-hidden">
 				{/* コントロールパネル */}
 				<form onSubmit={onSubmit}>
@@ -229,13 +230,12 @@ function App() {
 					{/* 画像表示エリア (Canvas) */}
 					<Canvas />
 				</div>
-				<CanvasSync src={currentImage} />
 			</main>
 		</CanvasProvider>
 	);
 }
 
-const CanvasSync = ({ src }: { src: string | null }) => {
+const CanvasSyncEffect = ({ src }: { src: string | null }) => {
 	const { setSrc } = useCanvasContext();
 	useEffect(() => {
 		setSrc(src);
