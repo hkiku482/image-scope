@@ -180,24 +180,25 @@ export const ColorWheel = ({
 					/>
 				</svg>
 			</div>
-			<PanelMetricRow>
-				<div className="flex items-center gap-2">
-					<ColorSwatch color={color} />
-					<Text size="xs" variant="mono">
+			<PanelMetricRow className="items-start">
+				<div className="flex items-center gap-2.5 self-center">
+					<ColorSwatch className="size-7" color={color} />
+					<Text
+						className="flex h-7 items-center text-sm font-semibold leading-none"
+						size="xs"
+						variant="mono"
+					>
 						{color.toUpperCase()}
 					</Text>
 				</div>
-				<Text
-					as="div"
-					className="text-right text-muted-foreground"
-					size="xs"
-					variant="mono"
-				>
-					<div>H {Math.round(hsl.h)}</div>
-					<div>
-						S {Math.round(hsl.s)} / L {Math.round(hsl.l)}
-					</div>
-				</Text>
+				<div className="grid grid-cols-[auto_2.5ch] gap-x-1 gap-y-0.5 font-mono text-[10px] leading-none text-muted-foreground tabular-nums">
+					<span>H</span>
+					<span className="text-right">{Math.round(hsl.h)}</span>
+					<span>L</span>
+					<span className="text-right">{Math.round(hsl.l)}</span>
+					<span>S</span>
+					<span className="text-right">{Math.round(hsl.s)}</span>
+				</div>
 			</PanelMetricRow>
 		</FloatingPanel>
 	);

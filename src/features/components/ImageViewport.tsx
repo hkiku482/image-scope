@@ -29,6 +29,7 @@ export const ImageViewport = ({
 	const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
 	const animationRef = useRef<number | null>(null);
 	const hoverRef = useRef<number | null>(null);
+	const initialColorImageRef = useRef<string | null>(null);
 	const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 	const [imageResolution, setImageResolution] = useState<{
 		width: number;
@@ -74,6 +75,7 @@ export const ImageViewport = ({
 			onResolutionChange(null);
 			setHoverColor(null);
 			setPickedColor(null);
+			initialColorImageRef.current = null;
 			return;
 		}
 
@@ -85,6 +87,7 @@ export const ImageViewport = ({
 			onResolutionChange(resolution);
 			setHoverColor(null);
 			setPickedColor(null);
+			initialColorImageRef.current = null;
 		};
 		image.src = imageDataUrl;
 	}, [imageDataUrl, onResolutionChange, setHoverColor, setPickedColor]);
@@ -147,6 +150,49 @@ export const ImageViewport = ({
 			ctx.filter = isGrayscale ? "grayscale(1)" : "none";
 			ctx.drawImage(image, x, y, drawWidth, drawHeight);
 			ctx.filter = "none";
+
+			if (initialColorImageRef.current !== imageDataUrl) {
+				initialColorImageRef.current = imageDataUrl;
+				const dpr = window.devicePixelRatio || 1;
+				const centerX = x + drawWidth / 2;
+				const centerY = y + drawHeight / 2;
+				const maxRadius = Math.max(1, Math.min(drawWidth, drawHeight) / 2);
+				let initialColor = null;
+
+				for (
+					let radius = 0;
+					radius <= maxRadius && !initialColor;
+					radius += Math.max(1, maxRadius / 12)
+				) {
+					const points =
+						radius === 0
+							? [[centerX, centerY]]
+							: [
+									[centerX - radius, centerY],
+									[centerX + radius, centerY],
+									[centerX, centerY - radius],
+									[centerX, centerY + radius],
+								];
+
+					for (const [pointX, pointY] of points) {
+						const sampleX = Math.round(pointX * dpr);
+						const sampleY = Math.round(pointY * dpr);
+						if (
+							sampleX < 0 ||
+							sampleY < 0 ||
+							sampleX >= canvas.width ||
+							sampleY >= canvas.height
+						) {
+							continue;
+						}
+
+						initialColor = getPixelColor(ctx, sampleX, sampleY);
+						if (initialColor) break;
+					}
+				}
+
+				setPickedColor(initialColor);
+			}
 		});
 
 		return () => {
@@ -156,9 +202,17 @@ export const ImageViewport = ({
 		containerSize,
 		imageResolution,
 		isGrayscale,
+		imageDataUrl,
+		setPickedColor,
 		transform.offset,
 		transform.scale,
 	]);
+
+	useEffect(() => {
+		return () => {
+			if (hoverRef.current) cancelAnimationFrame(hoverRef.current);
+		};
+	}, []);
 
 	const sampleColor = useCallback((clientX: number, clientY: number) => {
 		const canvas = canvasRef.current;
