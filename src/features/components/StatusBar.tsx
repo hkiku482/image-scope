@@ -33,7 +33,7 @@ export const StatusBar = ({
 		<InlineField>
 			<Kbd>G</Kbd>
 			<Text size="xs" variant="muted">
-				GrayScale
+				Gray Scale
 			</Text>
 			<Switch
 				checked={isGrayscale}

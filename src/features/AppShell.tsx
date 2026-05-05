@@ -50,11 +50,10 @@ export const AppShell = () => {
 				<TopBar
 					currentPath={viewer.currentPath}
 					imageCount={viewer.imagePaths.length}
-					isLoading={viewer.isLoading}
 					isSidebarOpen={viewer.isSidebarOpen}
 					onNext={viewer.nextImage}
+					onPathSubmit={viewer.openPath}
 					onPrevious={viewer.previousImage}
-					onReload={() => viewer.openPath(viewer.currentPath)}
 					onToggleSidebar={() => viewer.setIsSidebarOpen(!viewer.isSidebarOpen)}
 					selectedIndex={viewer.selectedIndex}
 				/>
