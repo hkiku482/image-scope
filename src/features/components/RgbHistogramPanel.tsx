@@ -30,7 +30,7 @@ export const RgbHistogramPanel = ({
 		height: HISTOGRAM_PANEL_MIN_WIDTH / HISTOGRAM_PANEL_ASPECT_RATIO,
 		width: HISTOGRAM_PANEL_MIN_WIDTH,
 	});
-	const chartHeight = Math.max(96, panelSize.height - 56);
+	const chartHeight = Math.max(96, panelSize.height - 44);
 
 	return (
 		<FloatingCorner placement="top-right">
