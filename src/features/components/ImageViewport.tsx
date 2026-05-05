@@ -3,11 +3,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EmptyState } from "../../components/layout/EmptyState";
 import { getPixelColor } from "../../utils/color";
 import type { ColorPickerState } from "../hooks/useColorPicker";
+import type { ImageRgbHistogramState } from "../hooks/useImageRgbHistogram";
 import { useViewportTransform } from "../hooks/useViewportTransform";
 import { ColorInspector } from "./ColorInspector";
+import { RgbHistogramPanel } from "./RgbHistogramPanel";
 
 type ImageViewportProps = {
 	colorPicker: ColorPickerState;
+	histogramState: ImageRgbHistogramState;
 	isGrayscale: boolean;
 	imageDataUrl: string | null;
 	onResolutionChange: (
@@ -18,6 +21,7 @@ type ImageViewportProps = {
 
 export const ImageViewport = ({
 	colorPicker,
+	histogramState,
 	isGrayscale,
 	imageDataUrl,
 	onResolutionChange,
@@ -35,6 +39,7 @@ export const ImageViewport = ({
 		width: number;
 		height: number;
 	} | null>(null);
+	const [isHistogramOpen, setIsHistogramOpen] = useState(false);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 	const transform = useViewportTransform(imageDataUrl);
 	const {
@@ -50,6 +55,31 @@ export const ImageViewport = ({
 	useEffect(() => {
 		onScaleChange(transform.scale);
 	}, [onScaleChange, transform.scale]);
+
+	useEffect(() => {
+		if (!imageDataUrl) {
+			setIsHistogramOpen(false);
+		}
+	}, [imageDataUrl]);
+
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (
+				document.activeElement instanceof HTMLInputElement ||
+				document.activeElement instanceof HTMLTextAreaElement
+			) {
+				return;
+			}
+
+			if (event.key.toLowerCase() === "i" && imageDataUrl) {
+				event.preventDefault();
+				setIsHistogramOpen((current) => !current);
+			}
+		};
+
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [imageDataUrl]);
 
 	useEffect(() => {
 		const container = containerRef.current;
@@ -284,6 +314,13 @@ export const ImageViewport = ({
 						left: mousePosition.x + 12,
 						top: mousePosition.y + 12,
 					}}
+				/>
+			)}
+			{imageDataUrl && (
+				<RgbHistogramPanel
+					isOpen={isHistogramOpen}
+					onOpenChange={setIsHistogramOpen}
+					state={histogramState}
 				/>
 			)}
 			<ColorInspector

@@ -29,7 +29,7 @@ export const useColorPicker = () => {
 	const [pickedColor, setPickedColor] = useState<RGBColor | null>(null);
 	const [hoverColor, setHoverColor] = useState<RGBColor | null>(null);
 	const [lastColor, setLastColor] = useState<RGBColor | null>(null);
-	const [isInspectorOpen, setIsInspectorOpen] = useState(true);
+	const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
 	const updatePickedColor = useCallback((color: RGBColor | null) => {
 		setPickedColor(color);
@@ -42,7 +42,7 @@ export const useColorPicker = () => {
 	}, []);
 
 	const activeColor =
-		hoverColor && mode === "dynamic" ? hoverColor : pickedColor ?? lastColor;
+		hoverColor && mode === "dynamic" ? hoverColor : (pickedColor ?? lastColor);
 	const hsl = useMemo(
 		() => hexToHsl(activeColor?.hex ?? "#000000"),
 		[activeColor],

@@ -1,9 +1,8 @@
-import { X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
-import { Button } from "../../components/Button";
 import { ColorSwatch } from "../../components/ColorSwatch";
 import {
 	FloatingPanel,
+	FloatingPanelCloseButton,
 	PanelMetricRow,
 } from "../../components/layout/FloatingPanel";
 import { Text } from "../../components/Text";
@@ -132,16 +131,7 @@ export const ColorWheel = ({
 
 	return (
 		<FloatingPanel className="w-[220px]">
-			<Button
-				type="button"
-				variant="ghost"
-				size="iconSm"
-				onClick={onClose}
-				aria-label="Close color wheel"
-				className="absolute right-1.5 top-1.5 z-10"
-			>
-				<X />
-			</Button>
+			<FloatingPanelCloseButton onClick={onClose} label="Close color wheel" />
 			<div className="relative" style={{ width: size, height: size }}>
 				<canvas ref={canvasRef} className="absolute inset-0" />
 				<svg

@@ -1,5 +1,7 @@
+import { X } from "lucide-react";
 import type * as React from "react";
 import { cn } from "../../lib/utils";
+import { Button } from "../Button";
 
 export const FloatingPanel = ({
 	className,
@@ -25,4 +27,26 @@ export const PanelMetricRow = ({
 		)}
 		{...props}
 	/>
+);
+
+export type FloatingPanelCloseButtonProps =
+	React.ButtonHTMLAttributes<HTMLButtonElement> & {
+		label: string;
+	};
+
+export const FloatingPanelCloseButton = ({
+	className,
+	label,
+	...props
+}: FloatingPanelCloseButtonProps) => (
+	<Button
+		type="button"
+		variant="ghost"
+		size="iconSm"
+		aria-label={label}
+		className={cn("absolute right-1.5 top-1.5 z-10", className)}
+		{...props}
+	>
+		<X />
+	</Button>
 );

@@ -6,11 +6,13 @@ import { ImageViewport } from "./components/ImageViewport";
 import { StatusBar } from "./components/StatusBar";
 import { TopBar } from "./components/TopBar";
 import { useColorPicker } from "./hooks/useColorPicker";
+import { useImageRgbHistogram } from "./hooks/useImageRgbHistogram";
 import { useImageViewer } from "./hooks/useImageViewer";
 
 export const AppShell = () => {
 	const viewer = useImageViewer();
 	const colorPicker = useColorPicker();
+	const histogramState = useImageRgbHistogram(viewer.selectedPath);
 	const [isGrayscale, setIsGrayscale] = useState(false);
 	const [scale, setScale] = useState(1);
 	const [resolution, setResolution] = useState<{
@@ -69,6 +71,7 @@ export const AppShell = () => {
 					)}
 					<ImageViewport
 						colorPicker={colorPicker}
+						histogramState={histogramState}
 						isGrayscale={isGrayscale}
 						imageDataUrl={viewer.imageDataUrl}
 						onResolutionChange={setResolution}

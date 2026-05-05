@@ -1,6 +1,6 @@
 import { Palette } from "lucide-react";
-import { Button } from "../../components/Button";
 import { FloatingCorner } from "../../components/layout/FloatingCorner";
+import { ToolButton } from "../../components/ToolButton";
 import type { RGBColor } from "../../types/color";
 import { ColorWheel } from "./ColorWheel";
 
@@ -30,15 +30,15 @@ export const ColorInspector = ({
 					onClose={() => onOpenChange(false)}
 				/>
 			) : (
-				<Button
-					type="button"
-					variant="secondary"
-					size="icon"
+				<ToolButton
+					className="bg-secondary/30 backdrop-blur-md hover:bg-secondary/50"
+					label="Show color inspector"
 					onClick={() => onOpenChange(true)}
-					aria-label="Show color inspector"
+					size="icon"
+					variant="secondary"
 				>
 					<Palette />
-				</Button>
+				</ToolButton>
 			)}
 		</FloatingCorner>
 	);

@@ -1,8 +1,10 @@
 mod history;
+mod image_histogram;
 mod load_image;
 mod storage;
 
 pub use history::*;
+pub use image_histogram::*;
 pub use load_image::*;
 pub use storage::*;
 
@@ -19,6 +21,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             get_image_base64,
+            get_image_rgb_histogram,
             get_path_items,
             get_parent_path,
             write_history,
